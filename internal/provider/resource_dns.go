@@ -20,6 +20,9 @@ import (
 	gonanoid "github.com/matoous/go-nanoid"
 )
 
+const DEFAULT_DNS_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz"
+const DEFAULT_DNS_LENGTH = 10
+
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &DnsResource{}
 var _ resource.ResourceWithImportState = &DnsResource{}
@@ -44,22 +47,22 @@ func (d *DnsResource) Metadata(ctx context.Context, req resource.MetadataRequest
 
 func (d *DnsResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "The dns resource generates hostname/dns friendly random strings that are intended to be used as unique identifiers for other resources.\n\n" +
-			"The alphabet used is '0123456789abcdefghijklmnopqrstuvwxyz'\n\n" +
-			"This resource can be used in conjunction with resources that have the `create_before_destroy` lifecycle flag set to avoid conflicts with " +
-			"unique names during the brief period where both the old and new resources exist concurrently.",
+		MarkdownDescription: fmt.Sprintf("The dns resource generates hostname/dns friendly random strings that are intended to be used as unique identifiers for other resources.\n\n"+
+			"The alphabet used is `\"%q\"`\n\n"+
+			"This resource can be used in conjunction with resources that have the `create_before_destroy` lifecycle flag set to avoid conflicts with "+
+			"unique names during the brief period where both the old and new resources exist concurrently.", DEFAULT_DNS_ALPHABET),
 		Attributes: map[string]schema.Attribute{
 			"length": schema.Int64Attribute{
-				MarkdownDescription: "The length of the desired nanoid. The minimum value for length is 1 and the maximum value is 64. The default value is 21.",
+				MarkdownDescription: fmt.Sprintf("The length of the desired nanoid.\nShould be between 1 and 64.\nThe default value is %d.", DEFAULT_ID_LENGTH),
 				Optional:            true,
 				Computed:            true,
-				Default:             int64default.StaticInt64(10),
+				Default:             int64default.StaticInt64(DEFAULT_DNS_LENGTH),
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
+					int64planmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.Int64{
-					int64validator.AtLeast(1),
-					int64validator.AtMost(64),
+					int64validator.Between(1, 64),
 				},
 			},
 
@@ -108,8 +111,11 @@ func (r *DnsResource) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	alphabet := "0123456789abcdefghijklmnopqrstuvwxyz"
+	alphabet := DEFAULT_DNS_ALPHABET
 	length := data.Length.ValueInt64()
+	if data.Length.IsNull() {
+		length = DEFAULT_DNS_LENGTH
+	}
 
 	id, err := gonanoid.Generate(alphabet, int(length))
 	if err != nil {
@@ -118,6 +124,7 @@ func (r *DnsResource) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	data.Id = types.StringValue(id)
+	data.Length = types.Int64Value(length)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -158,8 +165,9 @@ func (r *DnsResource) ImportState(ctx context.Context, req resource.ImportStateR
 	}
 
 	state := &DnsResourceModel{
-		Id:     types.StringValue(id),
-		Length: types.Int64Value(int64(length)),
+		Id:      types.StringValue(id),
+		Length:  types.Int64Value(int64(length)),
+		Keepers: types.MapNull(types.StringType),
 	}
 
 	diags := resp.State.Set(ctx, &state)

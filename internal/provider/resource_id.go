@@ -22,6 +22,9 @@ import (
 	gonanoid "github.com/matoous/go-nanoid"
 )
 
+const DEFAULT_ID_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"
+const DEFAULT_ID_LENGTH = 21
+
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &IdResource{}
 var _ resource.ResourceWithImportState = &IdResource{}
@@ -52,31 +55,32 @@ func (d *IdResource) Schema(ctx context.Context, req resource.SchemaRequest, res
 			"unique names during the brief period where both the old and new resources exist concurrently.",
 		Attributes: map[string]schema.Attribute{
 			"alphabet": schema.StringAttribute{
-				MarkdownDescription: "Supply your own list of characters to use for id generation. The default value is " +
-					"`\"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-\"`.",
+				MarkdownDescription: fmt.Sprintf("Supply your own list of characters to use for id generation.\n"+
+					"Should be between 1 and 255 characters long.\n"+
+					"The default value is `\"%q\"`.", DEFAULT_ID_ALPHABET),
 				Optional: true,
 				Computed: true,
-				Default:  stringdefault.StaticString("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"),
+				Default:  stringdefault.StaticString(DEFAULT_ID_ALPHABET),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.String{
-					stringvalidator.LengthAtLeast(1),
-					stringvalidator.LengthAtMost(255),
+					stringvalidator.LengthBetween(1, 255),
 				},
 			},
 
 			"length": schema.Int64Attribute{
-				MarkdownDescription: "The length of the desired nanoid. The minimum value for length is 1 and the maximum value is 64. The default value is 21.",
+				MarkdownDescription: fmt.Sprintf("The length of the desired nanoid.\nShould be between 1 and 64.\nThe default value is %d.", DEFAULT_ID_LENGTH),
 				Optional:            true,
 				Computed:            true,
-				Default:             int64default.StaticInt64(21),
+				Default:             int64default.StaticInt64(DEFAULT_ID_LENGTH),
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
+					int64planmodifier.UseStateForUnknown(),
 				},
 				Validators: []validator.Int64{
-					int64validator.AtLeast(1),
-					int64validator.AtMost(64),
+					int64validator.Between(1, 64),
 				},
 			},
 
@@ -126,7 +130,14 @@ func (r *IdResource) Create(ctx context.Context, req resource.CreateRequest, res
 	}
 
 	alphabet := data.Alphabet.ValueString()
+	if data.Alphabet.IsNull() {
+		alphabet = DEFAULT_ID_ALPHABET
+	}
+
 	length := data.Length.ValueInt64()
+	if data.Length.IsNull() {
+		length = DEFAULT_ID_LENGTH
+	}
 
 	id, err := gonanoid.Generate(alphabet, int(length))
 	if err != nil {
@@ -135,6 +146,8 @@ func (r *IdResource) Create(ctx context.Context, req resource.CreateRequest, res
 	}
 
 	data.Id = types.StringValue(id)
+	data.Alphabet = types.StringValue(alphabet)
+	data.Length = types.Int64Value(length)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
@@ -175,8 +188,10 @@ func (r *IdResource) ImportState(ctx context.Context, req resource.ImportStateRe
 	}
 
 	state := &IdResourceModel{
-		Id:     types.StringValue(id),
-		Length: types.Int64Value(int64(length)),
+		Id:       types.StringValue(id),
+		Length:   types.Int64Value(int64(length)),
+		Keepers:  types.MapNull(types.StringType),
+		Alphabet: types.StringValue(DEFAULT_ID_ALPHABET),
 	}
 
 	diags := resp.State.Set(ctx, &state)

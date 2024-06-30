@@ -20,9 +20,13 @@ This resource can be used in conjunction with resources that have the `create_be
 
 ### Optional
 
-- `alphabet` (String) Supply your own list of characters to use for id generation. The default value is `"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-"`.
+- `alphabet` (String) Supply your own list of characters to use for id generation.
+Should be between 1 and 255 characters long.
+The default value is `""0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz-""`.
 - `keepers` (Map of String) Arbitrary map of values that, when changed, will trigger recreation of resource. See [the main provider documentation](../index.html) for more information.
-- `length` (Number) The length of the desired nanoid. The minimum value for length is 1 and the maximum value is 64. The default value is 21.
+- `length` (Number) The length of the desired nanoid.
+Should be between 1 and 64.
+The default value is 21.
 
 ### Read-Only
 

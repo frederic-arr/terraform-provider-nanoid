@@ -4,7 +4,7 @@ page_title: "nanoid_dns Resource - nanoid"
 subcategory: ""
 description: |-
   The dns resource generates hostname/dns friendly random strings that are intended to be used as unique identifiers for other resources.
-  The alphabet used is '0123456789abcdefghijklmnopqrstuvwxyz'
+  The alphabet used is ""0123456789abcdefghijklmnopqrstuvwxyz""
   This resource can be used in conjunction with resources that have the create_before_destroy lifecycle flag set to avoid conflicts with unique names during the brief period where both the old and new resources exist concurrently.
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 The dns resource generates hostname/dns friendly random strings that are intended to be used as unique identifiers for other resources.
 
-The alphabet used is '0123456789abcdefghijklmnopqrstuvwxyz'
+The alphabet used is `""0123456789abcdefghijklmnopqrstuvwxyz""`
 
 This resource can be used in conjunction with resources that have the `create_before_destroy` lifecycle flag set to avoid conflicts with unique names during the brief period where both the old and new resources exist concurrently.
 
@@ -24,7 +24,9 @@ This resource can be used in conjunction with resources that have the `create_be
 ### Optional
 
 - `keepers` (Map of String) Arbitrary map of values that, when changed, will trigger recreation of resource. See [the main provider documentation](../index.html) for more information.
-- `length` (Number) The length of the desired nanoid. The minimum value for length is 1 and the maximum value is 64. The default value is 21.
+- `length` (Number) The length of the desired nanoid.
+Should be between 1 and 64.
+The default value is 21.
 
 ### Read-Only
 

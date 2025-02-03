@@ -4,6 +4,12 @@ issues:
   max-per-linter: 0
   max-same-issues: 0
 
+linters-settings:
+  misspell:
+    locale: US
+    ignore-words:
+      - copywrite
+
 linters:
   disable-all: true
   enable:

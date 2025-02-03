@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright (c) The Nanoid Provider for Terraform Authors
 // SPDX-License-Identifier: MPL-2.0
 
 package main
